@@ -45,7 +45,7 @@ export default function LoginPage() {
         username: formData.email, // Utilise l'email comme username
         password: formData.password,
       }
-      const res = await axios.post("http://localhost:8000/api/login/", payload)
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/login/`, payload)
       localStorage.setItem("isAuthenticated", "true")
       localStorage.setItem("userType", res.data.userType)
       router.push(res.data.userType === "client" ? "/client-dashboard" : "/freelancer-dashboard")
