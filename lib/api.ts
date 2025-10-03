@@ -170,6 +170,22 @@ class ApiClient {
     return response.json()
   }
 
+  async createD17Payment(paymentData: { amount: number; currency?: string; payment_type?: string; description?: string }) {
+    const response = await this.request("/payments/d17/create/", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    })
+    return response.json()
+  }
+
+  async getD17Status(params: { payment_id?: string; reference?: string }) {
+    const query = new URLSearchParams()
+    if (params.payment_id) query.set("payment_id", params.payment_id)
+    if (params.reference) query.set("reference", params.reference)
+    const response = await this.request(`/payments/d17/status/?${query.toString()}`)
+    return response.json()
+  }
+
   async getPaymentHistory() {
     const response = await this.request("/payments/history/")
     return response.json()
