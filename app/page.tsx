@@ -31,8 +31,10 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [testResult, setTestResult] = useState<string>("")
 
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+
   useEffect(() => {
-    axios.get("http://localhost:8000/api/projects/")
+    axios.get(`${API_BASE}/projects/`)
       .then(res => setTestResult("Connexion OK, projets reçus : " + res.data.length))
       .catch(err => setTestResult("Erreur de connexion au backend"))
   }, [])
