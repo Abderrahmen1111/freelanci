@@ -66,7 +66,7 @@ export default function RegisterPage() {
         location: formData.location,
         acceptTerms: formData.acceptTerms,
       }
-      const res = await axios.post("http://localhost:8000/api/register/", payload)
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/register/`, payload)
       setSuccessMsg("Utilisateur ajouté avec succès !")
       setTimeout(() => {
         localStorage.setItem("isAuthenticated", "true")
