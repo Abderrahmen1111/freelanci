@@ -5,6 +5,8 @@ import { motion } from "framer-motion"
 import { Search, Star, MapPin, DollarSign, MessageCircle, Eye, Heart, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { apiClient } from "@/lib/api"
+import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -18,6 +20,12 @@ import { demoFreelancers, demoProjects } from "@/lib/demo-data"
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("browse")
   const [selectedFreelancer, setSelectedFreelancer] = useState(null)
+  const [d17Amount, setD17Amount] = useState(0)
+  const [d17Description, setD17Description] = useState("")
+  const [d17QrBase64, setD17QrBase64] = useState<string | null>(null)
+  const [d17Reference, setD17Reference] = useState<string | null>(null)
+  const [d17Loading, setD17Loading] = useState(false)
+  const StripeCardForm = dynamic(() => import("@/components/stripe/StripeCardForm"), { ssr: false })
 
   const freelancers = demoFreelancers
   const myProjects = demoProjects.filter((p) => p.client.id === "1").slice(0, 3)
@@ -322,40 +330,65 @@ export default function ClientDashboard() {
                       <p className="text-sm text-gray-600">Scannez pour payer</p>
                     </div>
                     <div className="space-y-2">
-                      <Input placeholder="Montant (DT)" />
-                      <Input placeholder="Description du paiement" />
-                      <Button className="w-full">Générer QR Code</Button>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Montant (DT)"
+                        value={d17Amount || ""}
+                        onChange={(e) => setD17Amount(Number(e.target.value))}
+                      />
+                      <Input
+                        placeholder="Description du paiement"
+                        value={d17Description}
+                        onChange={(e) => setD17Description(e.target.value)}
+                      />
+                      <Button
+                        className="w-full"
+                        disabled={d17Loading || d17Amount <= 0}
+                        onClick={async () => {
+                          try {
+                            setD17Loading(true)
+                            const res = await apiClient.createD17Payment({
+                              amount: d17Amount,
+                              currency: "TND",
+                              payment_type: "service",
+                              description: d17Description,
+                            })
+                            if (res.error) throw new Error(res.error)
+                            setD17QrBase64(res.qr_base64)
+                            setD17Reference(res.reference)
+                          } catch (err) {
+                            console.error(err)
+                            alert("Erreur lors de la génération du QR D17")
+                          } finally {
+                            setD17Loading(false)
+                          }
+                        }}
+                      >
+                        {d17Loading ? "Génération..." : "Générer QR Code"}
+                      </Button>
+                      {d17QrBase64 && (
+                        <div className="pt-2">
+                          <img
+                            src={`data:image/png;base64,${d17QrBase64}`}
+                            alt="QR D17"
+                            className="mx-auto rounded-lg border"
+                          />
+                          {d17Reference && (
+                            <p className="text-xs text-gray-600 mt-2">Référence: {d17Reference}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Historique des Paiements</CardTitle>
+                    <CardTitle>Paiement par Carte (Stripe)</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium">Ahmed Ben Ali</p>
-                          <p className="text-sm text-gray-600">Site E-commerce - Acompte</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">750 DT</p>
-                          <p className="text-sm text-gray-600">10 Jan 2024</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium">Sarra Bouaziz</p>
-                          <p className="text-sm text-gray-600">Logo - Paiement final</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">800 DT</p>
-                          <p className="text-sm text-gray-600">05 Jan 2024</p>
-                        </div>
-                      </div>
-                    </div>
+                    <StripeCardForm />
                   </CardContent>
                 </Card>
               </div>
