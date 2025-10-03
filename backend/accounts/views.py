@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.db.models import Q
 from .models import User, Subscription
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserSerializer, SubscriptionSerializer
 
@@ -25,21 +26,31 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def login(request):
-    email = request.data.get('email', '').strip()
+    """Authentifie un utilisateur via email ou username et retourne des tokens JWT."""
+    identifier = (request.data.get('email') or request.data.get('username') or '').strip()
     password = request.data.get('password')
-    print("Email reçu :", email)
-    print("Emails en base :", list(User.objects.values_list('email', flat=True)))
-    user_obj = User.objects.filter(email__iexact=email.strip()).first()
-    if user_obj:
-        user = authenticate(username=user_obj.username, password=password)
-        if user is not None:
-            return Response({'userType': user.user_type})
-        else:
-            print("Mot de passe incorrect pour :", email)
-            return Response({'error': 'Identifiants invalides'}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        print("Utilisateur non trouvé pour :", email)
+
+    if not identifier or not password:
+        return Response({'error': 'Email/username et mot de passe requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Rechercher par email OU par username (insensible à la casse)
+    user_obj = User.objects.filter(Q(email__iexact=identifier) | Q(username__iexact=identifier)).first()
+    if not user_obj:
         return Response({'error': 'Utilisateur non trouvé'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = authenticate(username=user_obj.username, password=password)
+    if user is None:
+        return Response({'error': 'Identifiants invalides'}, status=status.HTTP_400_BAD_REQUEST)
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'user': UserSerializer(user).data,
+        'userType': user.user_type,
+        'tokens': {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+    })
 
 @api_view(['GET'])
 def me(request):

@@ -43,11 +43,17 @@ class Subscription(models.Model):
     current_period_end = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.plan_type} ({self.status})"
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     rating = models.FloatField(default=0.0)
     total_reviews = models.PositiveIntegerField(default=0)
     completed_projects = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"Profil de {self.user.username}"
 class Review(models.Model):
     reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_reviews')
     reviewed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_reviews')
@@ -56,6 +62,5 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-
     def __str__(self):
-        return f"{self.user.username} - {self.plan_type}"
+        return f"Avis de {self.reviewer.username} pour {self.reviewed.username} ({self.rating}/5)"
