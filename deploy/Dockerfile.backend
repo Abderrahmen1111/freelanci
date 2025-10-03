@@ -1,0 +1,31 @@
+# Backend (Django + Gunicorn)
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# System deps for Pillow, mysqlclient (optional), psycopg2-binary etc.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg62-turbo-dev zlib1g-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install requirements
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt || true
+
+# Copy project
+COPY backend /app
+
+# Collect static
+ENV DJANGO_SETTINGS_MODULE=freelancii.settings
+RUN python manage.py collectstatic --noinput || true
+
+# Expose gunicorn
+EXPOSE 8000
+
+CMD ["sh", "-c", "python manage.py migrate && gunicorn freelancii.wsgi:application --bind 0.0.0.0:8000 --workers 3"]
