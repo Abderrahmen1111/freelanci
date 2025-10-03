@@ -78,18 +78,25 @@ class ApiClient {
   }
 
   // Auth methods
-  async login(username: string, password: string) {
+  async login(identifier: string, password: string) {
+    // Backend supports email or username in either field
     const response = await this.request("/auth/login/", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: identifier, email: identifier, password }),
     })
     return response.json()
   }
 
   async register(userData: any) {
+    // Normalize userType camelCase to snake_case expected by DRF
+    const normalized = {
+      ...userData,
+      user_type: userData.userType ?? userData.user_type,
+    }
+    delete (normalized as any).userType
     const response = await this.request("/auth/register/", {
       method: "POST",
-      body: JSON.stringify(userData),
+      body: JSON.stringify(normalized),
     })
     return response.json()
   }

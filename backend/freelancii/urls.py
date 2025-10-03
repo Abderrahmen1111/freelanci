@@ -8,7 +8,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Auth endpoints available under both /api/ and /api/auth/ for compatibility
     path('api/', include('accounts.urls')),
+    path('api/auth/', include('accounts.urls')),
     path('api/projects/', include('projects.urls')),
     path('api/services/', include('services.urls')),
     path('api/payments/', include('payments.urls')),
